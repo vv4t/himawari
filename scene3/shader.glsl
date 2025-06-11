@@ -10,18 +10,13 @@ layout (std140) uniform ubo {
 
 out vec4 frag_color;
 
-uniform samplerCube sky;
-
-/*
 float f(vec2 p) {
-  return cos(p.x) * cos(p.y);
-}
-*/
-
-float f(vec2 p) {
+  p *= 0.3;
   float t = (atan(p.y, p.x) + M_PI) / (2.0 * M_PI);
   float r = length(p);
-  return floor(r + t) - t;
+  float z = floor(r + t) - t;
+  float s = M_PI * 4.0;
+  return floor(z * s) / s * 4.0;
 }
 
 float h_march(vec3 ro, vec3 rd) {
@@ -32,7 +27,7 @@ float h_march(vec3 ro, vec3 rd) {
   float td;
   for (td = dt; td < MAX_DISTANCE; td += dt) {
     vec3 p = ro + rd * td;
-    float h = f(p.xz * 0.5) * 2.0;
+    float h = f(p.xz);
     if (p.y < h) {
       return td - dt + dt * (lh - ly) / (p.y - ly - h + lh);
     }
