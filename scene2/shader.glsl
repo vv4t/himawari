@@ -2,7 +2,6 @@
 
 #include "../util/math.glsl"
 #include "../util/march.glsl"
-#include "../util/trace.glsl"
 #include "../util/ggx.glsl"
 #include "../util/light.glsl"
 

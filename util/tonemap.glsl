@@ -2,8 +2,8 @@ out vec4 frag_color;
 
 uniform sampler2D image;
 
-float gamma = 2.2;
-float exposure = 3.0;
+float gamma = 1.2;
+float exposure = 2.0;
 
 void main() {
   vec2 uv = gl_FragCoord.xy / vec2(400.0, 300.0);
