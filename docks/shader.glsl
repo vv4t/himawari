@@ -30,7 +30,6 @@ void main() {
   vec3 rd = normalize((view_mat * vec4(screen_pos, 1.0, 1.0)).xyz);
   
   float td = min(h_march(ro, rd), ray_march(ro, rd, 0));
-  // float td = min(trace_plane(ro, rd, vec3(0.0, 1.0, 0.0), 0.0), ray_march(ro, rd, 0));
   vec3 p = ro + rd * td;
   vec3 V = normalize(ro - p);
   int id = map_id(p);
@@ -38,7 +37,7 @@ void main() {
   vec3 color;
   if (id == 1) {
     vec3 N = f_N(p.xz);
-    color = calc_point_lighting(p, V, N, vec3(0.7, 0.8, 1.0), 0.5, 0.3);
+    color = calc_point_lighting(p, V, N, vec3(0.7, 0.8, 1.0), 0.5, 0.25);
   } else if (id == 2) {
     vec3 N = sdf_normal(p, 0);
     color = calc_point_lighting(p, V, N, vec3(0.25, 0.1, 0.0), 0.1, 0.5);
@@ -133,10 +132,10 @@ float sdf_lamp(vec3 p, vec3 o) {
 }
 
 float f(vec2 p) {
-  float d1 = length(p.xy - vec2(10.0, 4.0));
-  float d2 = length(p.xy - vec2(-10.0, 20.0));
-  float d3 = length(p.xy - vec2(7.0, 60.0));
-  return cos(d1 * 1.5 + time * 4.0) * 0.1 + cos(d2 * 2.3 + time * 8.0) * 0.05 + cos(d3 * 3.7 + time * 1.0) * 0.03;
+  float d1 = length(p.xy - vec2(100.0, 40.0));
+  float d2 = length(p.xy - vec2(-100.0, 20.0));
+  float d3 = length(p.xy - vec2(70.0, 60.0));
+  return cos(d1 * 2.0 + time * 4.0) * 0.07 + cos(d2 * 5.0 + time * 8.0) * 0.03 + cos(d3 * 8.0 + time * 1.0) * 0.01;
 }
 
 vec3 f_N(vec2 p) {
@@ -171,16 +170,19 @@ float h_march(vec3 ro, vec3 rd) {
 light_t lights[] = light_t[](
   light_t(vec3(-8.0, 2.0, -4.0), vec3(1.0, 1.0, 0.7) * 4.0),
   light_t(vec3(+8.0, 2.0, -4.0), vec3(1.0, 1.0, 0.7) * 4.0),
-  light_t(vec3(-16.0, 2.0, +10.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(-16.0, 2.0, +10.0), vec3(1.0, 1.0, 0.7) * 2.0),
   light_t(vec3(+16.0, 2.0, +10.0), vec3(1.0, 1.0, 0.7) * 4.0),
-  light_t(vec3(-8.0, 2.0, +20.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(-8.0, 2.0, +20.0), vec3(1.0, 1.0, 0.7) * 2.0),
   light_t(vec3(+8.0, 2.0, +20.0), vec3(1.0, 1.0, 0.7) * 4.0),
-  light_t(vec3(-8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 4.0),
-  light_t(vec3(+8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 4.0)
+  light_t(vec3(-8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 2.0),
+  light_t(vec3(+8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 2.0)
 );
 
 light_t lights_get(int num) {
-  return lights[num];
+  light_t l = lights[num];
+  float r = rand(l.position.xz);
+  l.radiance *= 0.95 + cos(70.0 * time + r * 10.0) * 0.05;
+  return l;
 }
 
 int lights_count() {
