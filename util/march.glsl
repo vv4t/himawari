@@ -95,6 +95,10 @@ float sdf_cylinder(vec3 p, vec3 o, float r, float h) {
 float sdf_plane(vec3 p, vec3 n, float d) {
   return dot(p, n) - d;
 }
+float sdf_octahedron(vec3 p, vec3 o, float s) {
+  p = abs(p - o);
+  return (p.x+p.y+p.z-s)*0.57735027;
+}
 
 mat3 axis_aligned_TBN(vec3 p, int mask) {
   vec3 N = sdf_normal(p, mask);

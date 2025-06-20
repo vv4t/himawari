@@ -56,6 +56,7 @@ vec3 calc_point_lighting(vec3 p, vec3 V, vec3 N, vec3 albedo, float metallic, fl
   return total_radiance;
 }
 
+#ifdef _ENABLE_SHADOW
 vec3 calc_point_lighting_with_shadow(vec3 p, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness, int shd_mask, float shd_soft) {
   vec3 total_radiance = vec3(0.0);
   
@@ -75,5 +76,6 @@ vec3 calc_point_lighting_with_shadow(vec3 p, vec3 V, vec3 N, vec3 albedo, float 
   
   return total_radiance;
 }
+#endif
 
 #endif
