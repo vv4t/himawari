@@ -3,6 +3,7 @@
 #include "../util/math.glsl"
 #include "../util/light.glsl"
 #include "../util/march.glsl"
+#include "../util/trace.glsl"
 
 layout (std140) uniform ubo {
   vec3 view_pos;
@@ -12,10 +13,6 @@ layout (std140) uniform ubo {
 };
 
 out vec4 frag_color;
-
-uniform sampler2D wood_albedo;
-uniform sampler2D wood_normal;
-uniform sampler2D wood_ao;
 
 float sdf_fence(vec3 p);
 float sdf_lamp(vec3 p, vec3 o);
@@ -33,7 +30,7 @@ void main() {
   vec3 rd = normalize((view_mat * vec4(screen_pos, 1.0, 1.0)).xyz);
   
   float td = min(h_march(ro, rd), ray_march(ro, rd, 0));
-  // float td = ray_march(ro, rd, 0);
+  // float td = min(trace_plane(ro, rd, vec3(0.0, 1.0, 0.0), 0.0), ray_march(ro, rd, 0));
   vec3 p = ro + rd * td;
   vec3 V = normalize(ro - p);
   int id = map_id(p);
@@ -41,16 +38,10 @@ void main() {
   vec3 color;
   if (id == 1) {
     vec3 N = f_N(p.xz);
-    color = calc_point_lighting(p, V, N, vec3(0.7, 0.8, 1.0), 0.3, 0.3);
+    color = calc_point_lighting(p, V, N, vec3(0.7, 0.8, 1.0), 0.5, 0.3);
   } else if (id == 2) {
-    mat3 TBN = axis_aligned_TBN(p, 0);
-    vec2 uv = fract((transpose(TBN) * p).xy * 0.5 + 0.5);
-    
-    vec3 albedo = texture(wood_albedo, uv).xyz;
-    vec3 normal = TBN * normalize(texture(wood_normal, uv).xyz * 2.0 - 1.0);
-    float ao = texture(wood_ao, uv).x;
-    
-    color = calc_point_lighting(p, V, normal, albedo, 0.1, 0.5) * ao;
+    vec3 N = sdf_normal(p, 0);
+    color = calc_point_lighting(p, V, N, vec3(0.25, 0.1, 0.0), 0.1, 0.5);
   } else if (id == 3) {
     vec3 N = sdf_normal(p, 0);
     color = calc_point_lighting(p, V, N, vec3(0.2), 0.6, 0.7);
@@ -69,7 +60,7 @@ int map_id(vec3 p) {
   float s1 = p.y - f(p.xz);
   float s2 = sdf_cuboid(p, vec3(-1.0, -1.0, -1.0), vec3(2.0, 2.0, 128.0));
   float s3 = sdf_fence(p);
-  if (s1 < 0.1         ) return 1;
+  if (s1 < 0.1) return 1;
   if (s2 < MIN_DISTANCE) return 2;
   if (s3 < MIN_DISTANCE) return 2;
   
@@ -134,7 +125,7 @@ float sdf_fence(vec3 p) {
 float sdf_lamp(vec3 p, vec3 o) {
   float s1 = sdf_sub(
     sdf_octahedron(p, o, 0.75),
-    sdf_cuboid(p, o - vec3(1.0, 0.15, 1.0), vec3(2.0, 0.3, 2.0))
+    sdf_cuboid(p, o - vec3(1.0, 0.25, 1.0), vec3(2.0, 0.3, 2.0))
   );
   float s2 = sdf_cylinder(p, o - vec3(0.0, 3.0, 0.0), 0.1, 2.5);
   float s3 = sdf_sphere(p, o + vec3(0.0, 0.7, 0.0), 0.1);
@@ -178,12 +169,14 @@ float h_march(vec3 ro, vec3 rd) {
 }
 
 light_t lights[] = light_t[](
-  light_t(vec3(-8.0, 2.0, +0.0), vec3(1.0, 1.0, 0.9) * 2.0),
-  light_t(vec3(+8.0, 2.0, +0.0), vec3(1.0, 1.0, 0.9) * 2.0),
-  light_t(vec3(-8.0, 2.0, +4.0), vec3(1.0, 1.0, 0.9) * 2.0),
-  light_t(vec3(+8.0, 2.0, +4.0), vec3(1.0, 1.0, 0.9) * 2.0),
-  light_t(vec3(-8.0, 2.0, +8.0), vec3(1.0, 1.0, 0.9) * 2.0),
-  light_t(vec3(+8.0, 2.0, +8.0), vec3(1.0, 1.0, 0.9) * 2.0)
+  light_t(vec3(-8.0, 2.0, -4.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(+8.0, 2.0, -4.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(-16.0, 2.0, +10.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(+16.0, 2.0, +10.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(-8.0, 2.0, +20.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(+8.0, 2.0, +20.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(-8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 4.0),
+  light_t(vec3(+8.0, 2.0, +70.0), vec3(1.0, 1.0, 0.7) * 4.0)
 );
 
 light_t lights_get(int num) {
@@ -191,5 +184,5 @@ light_t lights_get(int num) {
 }
 
 int lights_count() {
-  return 6;
+  return 8;
 }
