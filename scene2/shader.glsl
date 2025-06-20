@@ -1,5 +1,7 @@
 #define MAX_DISTANCE 64.0
 
+#define _ENABLE_SHADOW
+
 #include "../util/math.glsl"
 #include "../util/march.glsl"
 #include "../util/ggx.glsl"
