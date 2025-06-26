@@ -63,7 +63,7 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
   vec3 albedo, N;
   if (id == TERRAIN) {
     N = height_N(p.xz);
-    albedo = vec3(0.82, 0.69, 0.74) * (1.0 - 0.05 * rand(floor(p.xz * 100.0) / 100.0));
+    albedo = vec3(1.0, 0.8, 0.9) * (1.0 - 0.05 * rand(floor(p.xz * 50.0) / 50.0));
   } else if (id >= CONE) {
     N = sdf_normal(p, CONE);
     if (id == CONE + 0) albedo = vec3(0.91, 0.50, 0.65);
@@ -73,7 +73,7 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
     if (id == CONE + 4) albedo = vec3(0.55, 0.50, 0.53);
     if (id == CONE + 5) albedo = vec3(0.69, 0.42, 0.74);
   } else {
-    return texture(sky, rd).xyz;
+    return mix(texture(sky, rd).xyz, vec3(1.0, 0.8, 0.9), 0.5);
   }
   
   return albedo * (1.0 - max(dot(N, L), 0.0) * 0.3);
@@ -82,7 +82,7 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
 vec3 shade_water(vec3 ro, vec3 rd, vec3 p) {
   vec3 N = water_N(p.xz);
   
-  vec3 albedo = vec3(0.4, 1.0, 1.0);
+  vec3 albedo = vec3(1.0, 0.4, 1.0);
   float absorb = 0.05;
   
   vec3 F0 = mix(vec3(0.04), albedo, absorb);
@@ -117,9 +117,11 @@ int map_id(vec3 p, int mask) {
   
   if ((mask & CONE) > 0) {
     for (int i = 0; i < 6; i++) {
-      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 4.0 * float(i), 0.0), 6.0 - float(i), 0.1) - 2.0;
+      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 3.0 * float(i), 0.0), 6.0 - float(i), 0.1) - 2.0;
       if (s_i < MIN_DISTANCE) return CONE + i;
     }
+    float s2 = sdf_cone(p, vec3(0.0, 4.0 + 18.0, 0.0), vec2(1.0, 1.3), 3.0);
+    if (s2 < MIN_DISTANCE) return CONE;
   }
   
   return 0;
@@ -130,16 +132,19 @@ float sdf(vec3 p, int mask) {
   
   if ((mask & GEOMETRY) > 0) {
     for (float i = 0.0; i < 6.0; i++) {
-      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 4.0 * i, 0.0), 6.0 - i, 0.1) - 2.0;
+      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 3.0 * i, 0.0), 6.0 - i, 0.1) - 2.0;
       d = min(d, s_i);
     }
+    
+    float s2 = sdf_cone(p, vec3(0.0, 4.0 + 18.0, 0.0), vec2(1.0, 1.3), 3.0);
+    d = min(d, s2);
   }
   
   return d;
 }
 
 float height(vec2 p) {
-  float a = 3.0 * exp(-pow(dot(0.05 * p, 0.05 * p), 2.0));
+  float a = 3.0 * exp(-pow(dot(0.03 * p, 0.03 * p), 2.0));
   float b = 0.2 * cos(0.5 * p.x + 0.05 * sin(p.y));
   return a + b;
 }

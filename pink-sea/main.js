@@ -58,7 +58,7 @@ function free_move(input, view_pos, view_yaw, view_pitch) {
 }
 
 function height(x, y) {
-  const a = 3.0 * Math.exp(-Math.pow(0.05 * 0.05 * (x*x + y*y), 2.0));
+  const a = 3.0 * Math.exp(-Math.pow(0.03 * 0.03 * (x*x + y*y), 2.0));
   const b = 0.2 * Math.cos(0.5 * x + 0.05 * Math.sin(y));
   return a + b;
 }
