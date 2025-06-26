@@ -29,7 +29,7 @@ async function run() {
   scene.add_pass([buffer1], tonemap, [buffer2]);
   scene.add_pass([buffer2], dither, []);
   
-  view_pos[1] = 3;
+  view_pos[1] = 2;
 
   const update = () => {
     free_move(input, view_pos, view_yaw, view_pitch);
@@ -41,8 +41,8 @@ async function run() {
 }
 
 function free_move(input, view_pos, view_yaw, view_pitch) {
-  const forward = new vec3_t(0.0, 0.0, 0.05).rotate_y(-view_yaw[0]);
-  const side = new vec3_t(0.05, 0.0, 0.0).rotate_y(-view_yaw[0]);
+  const forward = new vec3_t(0.0, 0.0, 0.1).rotate_y(-view_yaw[0]);
+  const side = new vec3_t(0.1, 0.0, 0.0).rotate_y(-view_yaw[0]);
   let move = new vec3_t();
   
   if (input.get_key('W')) move = move.add(forward);
