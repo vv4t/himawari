@@ -16,7 +16,7 @@ async function run() {
   const blur = await scene.load_shader("../util/blur.glsl", [ "iChannel0" ]);
   const downsample = await scene.load_shader("../util/downsample.glsl", [ "srcTexture" ]);
   const upsample = await scene.load_shader("../util/upsample.glsl", [ "srcTexture" ]);
-  const tonemap = await scene.load_shader("../util/tonemap.glsl", [ "image" ]);
+  const tonemap = await scene.load_shader("../util/tonemap.glsl", [ "image" ], { define: { GAMMA: "0.6" }});
   const dither = await scene.load_shader("../util/dither.glsl", [ "image" ]);
   
   const sky = await scene.load_cubemap("../assets/gloomy", "jpg");
