@@ -13,6 +13,7 @@ async function run() {
 
   const shader = await scene.load_shader("shader.glsl", [ "sky" ]);
   const mix = await scene.load_shader("mix.glsl", [ "first", "second" ]);
+  const blur = await scene.load_shader("../util/blur.glsl", [ "iChannel0" ]);
   const downsample = await scene.load_shader("../util/downsample.glsl", [ "srcTexture" ]);
   const upsample = await scene.load_shader("../util/upsample.glsl", [ "srcTexture" ]);
   const tonemap = await scene.load_shader("../util/tonemap.glsl", [ "image" ]);
@@ -46,7 +47,9 @@ async function run() {
   scene.add_pass([buffer2], tonemap, [buffer1]);
   scene.add_pass([buffer1], dither, []);
   
+  view_pos[0] = 50;
   view_pos[1] = 2;
+  view_pos[2] = 12;
 
   const update = () => {
     free_move(input, view_pos, view_yaw, view_pitch);
@@ -67,12 +70,30 @@ function free_move(input, view_pos, view_yaw, view_pitch) {
   if (input.get_key('S')) move = move.add(forward.mulf(-1));
   if (input.get_key('D')) move = move.add(side);
   
-  view_pos[0] += move.x;
-  view_pos[1] += move.y;
-  view_pos[2] += move.z;
+  const new_x = view_pos[0] + move.x;
+  const new_z = view_pos[2] + move.z;
   
-  view_yaw[0] = input.get_mouse_x() / 600.0;
+  if (in_bound(new_x, new_z)) {
+    view_pos[0] = new_x;
+    view_pos[2] = new_z;
+  } else if (in_bound(view_pos[0], new_z)) {
+    view_pos[2] = new_z;
+  } else if (in_bound(new_x, view_pos[2])) {
+    view_pos[0] = new_x;
+  }
+  
+  view_yaw[0] = input.get_mouse_x() / 600.0 - Math.PI / 2.0;
   view_pitch[0] = -input.get_mouse_y() / 600.0;
+}
+
+function in_bound(x, y) {
+  if (x > -2.0 && x < 2.0) return true;
+  if (x > 20.0 && y > 10.0 && y < 14.0) return true;
+  if (x > 2.0 && x < 20.0 && y > 2.0 && y < 22.0)
+    if (x > 2.0 && x < 16.0 && y > 6.0 && y < 18.0) return false;
+    else return true;
+  
+  return false;
 }
 
 run();

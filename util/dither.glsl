@@ -1,5 +1,6 @@
 out vec4 frag_color;
 uniform sampler2D image;
+uniform vec2 iResolution;
 
 const float bayer_matrix[16] = float[] (
   -0.5,      0.0,    -0.375,   0.125,
@@ -12,7 +13,7 @@ const float color_range = 32.0;
 const float bayer_r = 1.0 / color_range;
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / vec2(800.0, 600.0);
+  vec2 uv = gl_FragCoord.xy / iResolution;
   ivec2 image_uv = ivec2(uv * vec2(textureSize(image, 0)));
 
   vec3 tex_color = texture(image, uv).rgb;

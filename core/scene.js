@@ -22,6 +22,9 @@ export class scene_t {
   constructor(canvas) {
     initGL(canvas);
     
+    gl.getExtension("OES_texture_float");
+    gl.getExtension("OES_texture_float_linear"); 
+    
     this.canvas = canvas;
     this.loader = new loader_t();
     this.mesh_buffer = new mesh_buffer_t([2], 6);
@@ -47,8 +50,8 @@ export class scene_t {
     return id;
   }
 
-  add_buffer(width, height) {
-    const buffer = create_buffer(width, height, gl.RGBA, gl.RGBA32F, gl.FLOAT);
+  add_buffer(width, height, config="NEAREST_CLAMP") {
+    const buffer = create_buffer(width, height, gl.RGBA, gl.RGBA32F, gl.FLOAT, config);
     const id = this.buffers.push(buffer) - 1;
     return id;
   }
@@ -90,7 +93,7 @@ export class scene_t {
     return id;
   }
 
-  add_pass(input, shader, output) {
+  add_pass(input, shader, output, config) {
     const pass = new pass_t(
       input.map((input) => this.buffers[input]),
       this.shaders[shader],
@@ -122,6 +125,7 @@ class pass_t {
     this.input = input;
     this.shader = shader;
     this.target = new target_t(bindings);
+    this.ul_resolution = gl.getUniformLocation(shader.program, "iResolution");
   }
 
   bind() {
@@ -132,6 +136,7 @@ class pass_t {
     
     this.shader.bind();
     this.target.bind();
+    gl.uniform2f(this.ul_resolution, this.width, this.height);
   }
 };
 
