@@ -32,7 +32,7 @@ void main() {
   vec3 color;
   if (id == 1) {
     vec3 a = vec3(0.90, 0.75, 0.90);
-    vec3 b = vec3(0.25, 0.00, 0.19);
+    vec3 b = vec3(0.25, 0.05, 0.19);
     
     vec2 t = floor(p.xz);
     vec3 albedo = mod(t.x + t.y, 2.0) > 0.0 ? a : b;
@@ -42,7 +42,7 @@ void main() {
     float dim = exp(-0.02 * td);
     color = vec3(0.1) * dim;
   } else if (id == 3) {
-    color = vec3(1.0);
+    color = vec3(1.0, 1.0, 0.9) * 30.0;
   } else {
     color = texture(sky, rd).xyz;
   }
@@ -110,9 +110,9 @@ float trace_floor(vec3 ro, vec3 rd) {
   vec3 p = ro + rd * td;
   
   if (p.x > -2.0 && p.x < 2.0) return td;
-  if (p.x > 50.0 && p.z > 23.0 && p.z < 27.0) return td;
-  if (p.x > 2.0 && p.x < 50.0 && p.z > 0.0 && p.z < 50.0)
-    if (p.x > 2.0 && p.x < 46.0 && p.z > 4.0 && p.z < 46.0) return MAX_DISTANCE;
+  if (p.x > 20.0 && p.z > 10.0 && p.z < 14.0) return td;
+  if (p.x > 2.0 && p.x < 20.0 && p.z > 2.0 && p.z < 22.0)
+    if (p.x > 2.0 && p.x < 16.0 && p.z > 6.0 && p.z < 18.0) return MAX_DISTANCE;
     else return td;
   
   return MAX_DISTANCE;

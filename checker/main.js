@@ -12,6 +12,9 @@ async function run() {
   input.set_mouse_lock(true);
 
   const shader = await scene.load_shader("shader.glsl", [ "sky" ]);
+  const mix = await scene.load_shader("mix.glsl", [ "first", "second" ]);
+  const downsample = await scene.load_shader("../util/downsample.glsl", [ "srcTexture" ]);
+  const upsample = await scene.load_shader("../util/upsample.glsl", [ "srcTexture" ]);
   const tonemap = await scene.load_shader("../util/tonemap.glsl", [ "image" ]);
   const dither = await scene.load_shader("../util/dither.glsl", [ "image" ]);
   
@@ -19,6 +22,11 @@ async function run() {
   
   const buffer1 = scene.add_buffer(400, 300);
   const buffer2 = scene.add_buffer(400, 300);
+  
+  const mip0 = scene.add_buffer(400, 300, "LINEAR_CLAMP");
+  const mip1 = scene.add_buffer(300, 225, "LINEAR_CLAMP");
+  const mip2 = scene.add_buffer(200, 150, "LINEAR_CLAMP");
+  const mip3 = scene.add_buffer(100, 75, "LINEAR_CLAMP");
 
   const view_pos = new Float32Array(3);
   const view_yaw = new Float32Array(1);
@@ -26,8 +34,17 @@ async function run() {
   scene.add_data("ubo", [view_pos, view_yaw, view_pitch]);
 
   scene.add_pass([sky], shader, [buffer1]);
-  scene.add_pass([buffer1], tonemap, [buffer2]);
-  scene.add_pass([buffer2], dither, []);
+  
+  scene.add_pass([buffer1], downsample, [mip1]);
+  scene.add_pass([mip1], downsample, [mip2]);
+  scene.add_pass([mip2], downsample, [mip3]);
+  scene.add_pass([mip3], upsample, [mip2]);
+  scene.add_pass([mip2], upsample, [mip1]);
+  scene.add_pass([mip1], upsample, [mip0]);
+  
+  scene.add_pass([buffer1, mip0], mix, [buffer2]);
+  scene.add_pass([buffer2], tonemap, [buffer1]);
+  scene.add_pass([buffer1], dither, []);
   
   view_pos[1] = 2;
 
