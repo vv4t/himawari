@@ -60,7 +60,7 @@ void main() {
 vec3 shade_water(vec3 p, vec3 ro, vec3 rd) {
   vec3 N = get_water_normal(p);
   
-  vec3 albedo = vec3(0.4, 1.0, 1.0);
+  vec3 albedo = vec3(1.0, 0.4, 1.0);
   float absorb = 0.1;
   
   vec3 F0 = mix(vec3(0.04), albedo, absorb);
