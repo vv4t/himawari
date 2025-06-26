@@ -56,9 +56,19 @@ export class scene_t {
     return id;
   }
 
-  async load_shader(path, channels) {
+  async load_shader(path, channels, config) {
+    let define = [];
+    
+    if (config) {
+      if ("define" in config) {
+        for (const name in config["define"])
+          define.push(`#define ${name} ${config['define'][name]}`);
+      }
+    }
+    
     const fragment_shader = [
       "#version 300 es",
+      ...define,
       "precision mediump float;",
       ...await load_shader_contents(this.loader, path)
     ].join("\n");
