@@ -26,11 +26,8 @@ async function run() {
 
   scene.add_pass([], shader, [buffer]);
   scene.add_pass([buffer], dither, []);
-  
-  const step_count = document.getElementById("step");
 
   const update = () => {
-    step.innerText = "STEP: " + Math.floor(view_pos[1] * Math.PI);
     free_move(input, view_pos, view_yaw, view_pitch);
     scene.render();
     requestAnimationFrame(update);

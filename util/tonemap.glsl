@@ -4,7 +4,7 @@ uniform sampler2D image;
 uniform vec2 iResolution;
 
 #ifndef GAMMA
-  #define GAMME 1.2
+  #define GAMMA 1.2
 #endif
 
 #ifndef EXPOSURE
