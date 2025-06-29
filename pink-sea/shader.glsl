@@ -82,8 +82,8 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
 vec3 shade_water(vec3 ro, vec3 rd, vec3 p) {
   vec3 N = water_N(p.xz);
   
-  vec3 albedo = vec3(1.0, 0.4, 1.0);
-  float absorb = 0.05;
+  vec3 albedo = vec3(1.0, 0.7, 1.0);
+  float absorb = 0.2;
   
   vec3 F0 = mix(vec3(0.04), albedo, absorb);
   vec3 kS = fresnelSchlick(max(dot(N, -rd), 0.0), F0);
@@ -106,6 +106,34 @@ vec3 shade_water(vec3 ro, vec3 rd, vec3 p) {
   return color;
 }
 
+float sdf_structure(vec3 p, vec3 o, float h) {
+  float d = MAX_DISTANCE;
+  
+  for (int i = 0; i < 6; i++) {
+    vec3 o_i = vec3(o.x, o.y + 3.0 * float(i) * h, o.z);
+    float s_i = sdf_cylinder(p, o_i, 6.0 * h - float(i) * h, 0.1 * h) - 2.0 * h;
+    d = min(d, s_i);
+  }
+  
+  float s2 = sdf_cone(p, vec3(o.x, o.y + 6.0 * 3.0 * h, o.z), vec2(1.0, 1.3), 3.0 * h);
+  d = min(d, s2);
+  
+  return d;
+}
+
+int map_structure(vec3 p, vec3 o, float h) {
+  for (int i = 0; i < 6; i++) {
+    vec3 o_i = vec3(o.x, o.y + 3.0 * float(i) * h, o.z);
+    float s_i = sdf_cylinder(p, o_i, 6.0 * h - float(i) * h, 0.1 * h) - 2.0 * h;
+    if (s_i < MIN_DISTANCE) return CONE + i;
+  }
+  
+  float s2 = sdf_cone(p, vec3(o.x, o.y + 6.0 * 3.0 * h, o.z), vec2(1.0, 1.3), 3.0 * h);
+  if (s2 < MIN_DISTANCE) return CONE;
+  
+  return 0;
+}
+
 int map_id(vec3 p, int mask) {
   if ((mask & TERRAIN) > 0) {
     if (p.y - height(p.xz) < 0.1) return TERRAIN;
@@ -116,12 +144,18 @@ int map_id(vec3 p, int mask) {
   }
   
   if ((mask & CONE) > 0) {
-    for (int i = 0; i < 6; i++) {
-      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 3.0 * float(i), 0.0), 6.0 - float(i), 0.1) - 2.0;
-      if (s_i < MIN_DISTANCE) return CONE + i;
-    }
-    float s2 = sdf_cone(p, vec3(0.0, 4.0 + 18.0, 0.0), vec2(1.0, 1.3), 3.0);
-    if (s2 < MIN_DISTANCE) return CONE;
+    int s1 = map_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
+    int s2 = map_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
+    int s3 = map_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
+    float s4 = sdf_smooth_union(
+      sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
+      sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
+      0.9
+    );
+    if (s1 > 0) return s1;
+    if (s2 > 0) return s2;
+    if (s3 > 0) return s3;
+    if (s4 < MIN_DISTANCE) return CONE;
   }
   
   return 0;
@@ -131,22 +165,30 @@ float sdf(vec3 p, int mask) {
   float d = MAX_DISTANCE;
   
   if ((mask & GEOMETRY) > 0) {
-    for (float i = 0.0; i < 6.0; i++) {
-      float s_i = sdf_cylinder(p, vec3(0.0, 4.0 + 3.0 * i, 0.0), 6.0 - i, 0.1) - 2.0;
-      d = min(d, s_i);
-    }
-    
-    float s2 = sdf_cone(p, vec3(0.0, 4.0 + 18.0, 0.0), vec2(1.0, 1.3), 3.0);
+    float s1 = sdf_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
+    float s2 = sdf_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
+    float s3 = sdf_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
+    float s4 = sdf_smooth_union(
+      sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
+      sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
+      0.9
+    );
+    d = min(d, s1);
     d = min(d, s2);
+    d = min(d, s3);
+    d = min(d, s4);
   }
   
   return d;
 }
 
 float height(vec2 p) {
+  vec2 q = p - vec2(60.0, 60.0);
+  
   float a = 3.0 * exp(-pow(dot(0.03 * p, 0.03 * p), 2.0));
-  float b = 0.2 * cos(0.5 * p.x + 0.05 * sin(p.y));
-  return a + b;
+  float b = 2.0 * exp(-pow(dot(0.1 * q, 0.1 * q), 2.0));
+  float c = 0.2 * cos(0.5 * p.x + 0.05 * sin(p.y));
+  return a + b + c;
 }
 
 vec3 height_N(vec2 p) {
@@ -162,7 +204,7 @@ float water_height(vec2 p) {
   float d1 = length(p.xy - vec2(100.0, 40.0));
   float d2 = length(p.xy - vec2(-100.0, 20.0));
   float d3 = length(p.xy - vec2(70.0, 60.0));
-  return cos(d1 * 2.0 + time * 4.0) * 0.07 + cos(d2 * 5.0 + time * 8.0) * 0.03 + cos(d3 * 8.0 + time * 1.0) * 0.01;
+  return cos(d1 * 2.0 + time * 4.0) * 0.03 + cos(d2 * 5.0 + time * 8.0) * 0.02 + cos(d3 * 8.0 + time * 1.0) * 0.01;
 }
 
 vec3 water_N(vec2 p) {

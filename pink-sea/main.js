@@ -24,7 +24,7 @@ async function run() {
   const time = new Float32Array(1);
   scene.add_data("ubo", [view_pos, view_yaw, view_pitch, time]);
 
-  view_pos[0] = 10.0;
+  view_pos[0] = 50.0;
 
   scene.add_pass([sky], shader, [buffer]);
   scene.add_pass([buffer], dither, []);
@@ -51,7 +51,7 @@ function free_move(input, view_pos, view_yaw, view_pitch) {
   
   view_pos[0] += move.x;
   view_pos[2] += move.z;
-  view_pos[1] = height(view_pos[0], view_pos[2]) + 2.0;
+  view_pos[1] = height(view_pos[0], view_pos[2]) + 4.0;
   
   view_yaw[0] = input.get_mouse_x() / 600.0;
   view_pitch[0] = -input.get_mouse_y() / 600.0;

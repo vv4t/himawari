@@ -120,6 +120,15 @@ float sdf_cone( vec3 p, vec3 o, vec2 c, float h )
   return sqrt(d)*sign(s);
 }
 
+float sdf_capped_torus( vec3 p, vec3 o, vec2 sc, float ra, float rb) {
+  o.y += ra / 2.0 + rb;
+  p -= o;
+  p.x = abs(p.x);
+  p.y = -p.y;
+  float k = (sc.y*p.x>sc.x*p.y) ? dot(p.xy,sc) : length(p.xy);
+  return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
+}
+
 mat3 axis_aligned_TBN(vec3 p, int mask) {
   vec3 N = sdf_normal(p, mask);
   vec3 absN = abs(N);
