@@ -51,16 +51,20 @@ function free_move(input, view_pos, view_yaw, view_pitch) {
   
   view_pos[0] += move.x;
   view_pos[2] += move.z;
-  view_pos[1] = height(view_pos[0], view_pos[2]) + 4.0;
+  view_pos[1] = height(view_pos[0], view_pos[2]) + 2.0;
   
   view_yaw[0] = input.get_mouse_x() / 600.0;
   view_pitch[0] = -input.get_mouse_y() / 600.0;
 }
 
 function height(x, y) {
+  const u1 = x - 60;
+  const v1 = y - 60;
+  
   const a = 3.0 * Math.exp(-Math.pow(0.03 * 0.03 * (x*x + y*y), 2.0));
-  const b = 0.2 * Math.cos(0.5 * x + 0.05 * Math.sin(y));
-  return a + b;
+  const b = 2.0 * Math.exp(-Math.pow(0.1 * 0.1 * (u1*u1 + v1*v1), 2.0));
+  const c = 0.2 * Math.cos(0.5 * x + 0.05 * Math.sin(y));
+  return a + b + c;
 }
 
 run();

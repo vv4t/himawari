@@ -144,16 +144,16 @@ int map_id(vec3 p, int mask) {
   }
   
   if ((mask & CONE) > 0) {
-    int s1 = map_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
-    int s2 = map_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
+    // int s1 = map_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
+    // int s2 = map_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
     int s3 = map_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
     float s4 = sdf_smooth_union(
       sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
       sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
       0.9
     );
-    if (s1 > 0) return s1;
-    if (s2 > 0) return s2;
+    // if (s1 > 0) return s1;
+    // if (s2 > 0) return s2;
     if (s3 > 0) return s3;
     if (s4 < MIN_DISTANCE) return CONE;
   }
@@ -165,16 +165,16 @@ float sdf(vec3 p, int mask) {
   float d = MAX_DISTANCE;
   
   if ((mask & GEOMETRY) > 0) {
-    float s1 = sdf_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
-    float s2 = sdf_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
+    // float s1 = sdf_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
+    // float s2 = sdf_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
     float s3 = sdf_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
     float s4 = sdf_smooth_union(
       sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
       sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
       0.9
     );
-    d = min(d, s1);
-    d = min(d, s2);
+    // d = min(d, s1);
+    // d = min(d, s2);
     d = min(d, s3);
     d = min(d, s4);
   }
@@ -184,7 +184,6 @@ float sdf(vec3 p, int mask) {
 
 float height(vec2 p) {
   vec2 q = p - vec2(60.0, 60.0);
-  
   float a = 3.0 * exp(-pow(dot(0.03 * p, 0.03 * p), 2.0));
   float b = 2.0 * exp(-pow(dot(0.1 * q, 0.1 * q), 2.0));
   float c = 0.2 * cos(0.5 * p.x + 0.05 * sin(p.y));
@@ -200,7 +199,7 @@ vec3 height_N(vec2 p) {
 }
 
 float water_height(vec2 p) {
-  p *= 0.4;
+  p *= 0.1;
   float d1 = length(p.xy - vec2(100.0, 40.0));
   float d2 = length(p.xy - vec2(-100.0, 20.0));
   float d3 = length(p.xy - vec2(70.0, 60.0));
