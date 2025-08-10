@@ -1,4 +1,4 @@
-#define MAX_DISTANCE 128.0
+#define MAX_DISTANCE 256.0
 
 #include "../util/math.glsl"
 #include "../util/trace.glsl"
@@ -28,11 +28,13 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 vec3 shade_opaque(vec3 ro, vec3 rd, float td);
 vec3 shade_water(vec3 ro, vec3 rd, vec3 p);
 
-#define L normalize(vec3(0.5, 1.0, 0.5))
+#define L normalize(vec3(0.8, 1.0, 0.8))
 #define WATER (1 << 0)
 #define TERRAIN (1 << 1)
-#define CONE (1 << 2)
-#define GEOMETRY (TERRAIN | CONE)
+#define STRING (1 << 2)
+#define CONE (1 << 3)
+#define BALLOON (1 << 6)
+#define GEOMETRY (TERRAIN | CONE | STRING | BALLOON)
 
 void main() {
   vec2 screen_pos = gl_FragCoord.xy / iResolution * 2.0 - 1.0;
@@ -63,8 +65,11 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
   vec3 albedo, N;
   if (id == TERRAIN) {
     N = height_N(p.xz);
-    albedo = vec3(1.0, 0.8, 0.9) * (1.0 - 0.05 * rand(floor(p.xz * 50.0) / 50.0));
-  } else if (id >= CONE) {
+    albedo = vec3(1.0, 0.9, 1.0) * (1.0 - 0.05 * abs(rand(floor(p.xz * 50.0))));
+  } else if (id == STRING) {
+    N = sdf_normal(p, STRING);
+    albedo = vec3(1.0);
+  } else if (id >= CONE && id <= CONE + 5) {
     N = sdf_normal(p, CONE);
     if (id == CONE + 0) albedo = vec3(0.91, 0.50, 0.65);
     if (id == CONE + 1) albedo = vec3(0.68, 0.21, 0.53);
@@ -72,11 +77,16 @@ vec3 shade_opaque(vec3 ro, vec3 rd, float td) {
     if (id == CONE + 3) albedo = vec3(0.71, 0.60, 0.66);
     if (id == CONE + 4) albedo = vec3(0.55, 0.50, 0.53);
     if (id == CONE + 5) albedo = vec3(0.69, 0.42, 0.74);
+  } else if (id >= BALLOON) {
+    N = sdf_normal(p, BALLOON);
+    if (id == BALLOON + 0) albedo = vec3(1.0, 1.0, 0.8);
+    if (id == BALLOON + 1) albedo = vec3(0.8, 1.0, 1.0);
+    if (id == BALLOON + 2) albedo = vec3(1.0, 0.8, 1.0);
   } else {
-    return mix(texture(sky, rd).xyz, vec3(1.0, 0.8, 0.9), 0.5);
+    return mix(texture(sky, rd).xyz, vec3(1.5, 1.0, 1.5), 0.5);
   }
   
-  return albedo * (1.0 - max(dot(N, L), 0.0) * 0.3);
+  return albedo * (0.7 + max(dot(N, L), 0.0) * 0.3);
 }
 
 vec3 shade_water(vec3 ro, vec3 rd, vec3 p) {
@@ -106,6 +116,14 @@ vec3 shade_water(vec3 ro, vec3 rd, vec3 p) {
   return color;
 }
 
+float sdf_tree(vec3 p, vec3 o) {
+  return sdf_smooth_union(
+    sdf_capped_torus(p, o + vec3(0.0, 10.0, 0.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
+    sdf_cylinder(p, o, 1.0, 10.0),
+    0.9
+  );
+}
+
 float sdf_structure(vec3 p, vec3 o, float h) {
   float d = MAX_DISTANCE;
   
@@ -119,6 +137,15 @@ float sdf_structure(vec3 p, vec3 o, float h) {
   d = min(d, s2);
   
   return d;
+}
+
+float sdf_string(vec3 p, vec3 o, float r, float h) {
+  o.x += sin(p.y + time * 5.0) * 0.2;
+  h /= 2.0;
+  p -= o;
+  p.y -= h;
+  vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
+  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
 int map_structure(vec3 p, vec3 o, float h) {
@@ -144,18 +171,29 @@ int map_id(vec3 p, int mask) {
   }
   
   if ((mask & CONE) > 0) {
-    // int s1 = map_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
-    // int s2 = map_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
-    int s3 = map_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
-    float s4 = sdf_smooth_union(
-      sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
-      sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
-      0.9
-    );
-    // if (s1 > 0) return s1;
-    // if (s2 > 0) return s2;
+    float s1 = sdf_tree(p, vec3(80.0, 0.0, -20.0));
+    int s2 = map_structure(p, vec3(+20.0, 3.0, -17.0), 1.0);
+    int s3 = map_structure(p, vec3( 0.0, 4.0, -7.0), 1.5);
+    float s4 = sdf_tree(p, vec3(60.0, 0.0, 60.0));
+    if (s1 < MIN_DISTANCE) return CONE + 2;
+    if (s2 > 0) return s2;
     if (s3 > 0) return s3;
     if (s4 < MIN_DISTANCE) return CONE;
+  }
+  
+  if ((mask & BALLOON) > 0 || (mask & STRING) > 0) {
+    float s1 = sdf_string(p, vec3(60.0, 3.0, 10.0), 0.1, 5.0);
+    float s2 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(60.0, 8.0, 10.0), 1.0);
+    float s3 = sdf_string(p, vec3(40.0, 3.0, -10.0), 0.1, 5.0);
+    float s4 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(40.0, 8.0, -10.0), 1.0);
+    float s5 = sdf_string(p, vec3(10.0, 3.0, 30.0), 0.1, 5.0);
+    float s6 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(10.0, 8.0, 30.0), 1.0);
+    if (s1 < MIN_DISTANCE) return STRING;
+    if (s2 < MIN_DISTANCE) return BALLOON;
+    if (s3 < MIN_DISTANCE) return STRING;
+    if (s4 < MIN_DISTANCE) return BALLOON + 1;
+    if (s5 < MIN_DISTANCE) return STRING;
+    if (s6 < MIN_DISTANCE) return BALLOON + 2;
   }
   
   return 0;
@@ -165,18 +203,18 @@ float sdf(vec3 p, int mask) {
   float d = MAX_DISTANCE;
   
   if ((mask & GEOMETRY) > 0) {
-    // float s1 = sdf_structure(p, vec3(-25.0, 4.0, 5.0), 1.0);
-    // float s2 = sdf_structure(p, vec3(+20.0, 3.0, 17.0), 1.0);
-    float s3 = sdf_structure(p, vec3( 0.0, 4.0, 0.0), 1.5);
-    float s4 = sdf_smooth_union(
-      sdf_capped_torus(p, vec3(60.0, 10.0, 60.0), vec2(sin(2.3), cos(2.3)), 3.0, 1.0),
-      sdf_cylinder(p, vec3(60.0, 0.0, 60.0), 1.0, 10.0),
-      0.9
-    );
-    // d = min(d, s1);
-    // d = min(d, s2);
-    d = min(d, s3);
-    d = min(d, s4);
+    float s1 = sdf_tree(p, vec3(80.0, 0.0, -20.0));
+    float s2 = sdf_structure(p, vec3(+20.0, 3.0, -17.0), 1.0);
+    float s3 = sdf_structure(p, vec3( 0.0, 4.0, -7.0), 1.5);
+    float s4 = sdf_tree(p, vec3(60.0, 0.0, 60.0));
+    float s5 = sdf_string(p, vec3(60.0, 3.0, 10.0), 0.1, 5.0);
+    float s6 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(60.0, 8.0, 10.0), 1.0);
+    float s7 = sdf_string(p, vec3(40.0, 3.0, -10.0), 0.1, 5.0);
+    float s8 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(40.0, 8.0, -10.0), 1.0);
+    float s9 = sdf_string(p, vec3(10.0, 3.0, 30.0), 0.1, 5.0);
+    float s10 = sdf_sphere(p + vec3(sin(7.0 + time * 5.0) * 0.2, 0.0, 0.0), vec3(10.0, 8.0, 30.0), 1.0);
+    
+    d = min(min(min(min(s1, s2), min(s3, s4)), min(min(s5, s6), min(s7, s8))), min(s9, s10));
   }
   
   return d;
@@ -184,10 +222,13 @@ float sdf(vec3 p, int mask) {
 
 float height(vec2 p) {
   vec2 q = p - vec2(60.0, 60.0);
+  vec2 r = p - vec2(80.0, -20.0);
   float a = 3.0 * exp(-pow(dot(0.03 * p, 0.03 * p), 2.0));
   float b = 2.0 * exp(-pow(dot(0.1 * q, 0.1 * q), 2.0));
   float c = 0.2 * cos(0.5 * p.x + 0.05 * sin(p.y));
-  return a + b + c;
+  float d = exp(-pow((p.y - sin(p.x * 0.3)) / 2.0, 2.0)) * (1.0 / (1.0 + exp(-(p.x - 40.0))));
+  float e = 2.0 * exp(-pow(dot(0.1 * r, 0.1 * r), 2.0));
+  return a + b + c + d + e;
 }
 
 vec3 height_N(vec2 p) {
@@ -199,11 +240,11 @@ vec3 height_N(vec2 p) {
 }
 
 float water_height(vec2 p) {
-  p *= 0.1;
+  p *= 0.9;
   float d1 = length(p.xy - vec2(100.0, 40.0));
   float d2 = length(p.xy - vec2(-100.0, 20.0));
   float d3 = length(p.xy - vec2(70.0, 60.0));
-  return cos(d1 * 2.0 + time * 4.0) * 0.03 + cos(d2 * 5.0 + time * 8.0) * 0.02 + cos(d3 * 8.0 + time * 1.0) * 0.01;
+  return (cos(d1 * 2.0 + time * 4.0) * 0.03 + cos(d2 * 5.0 + time * 8.0) * 0.02 + cos(d3 * 8.0 + time * 1.0) * 0.01) * 0.1;
 }
 
 vec3 water_N(vec2 p) {
